@@ -1,4 +1,4 @@
-export type Category = "교내 공모전" | "서포터즈" | "IC-PBL";
+export type Category = "교내 공모전" | "서포터즈" | "IC-PBL" | "대외활동";
 
 export interface Contest {
   id: string;
