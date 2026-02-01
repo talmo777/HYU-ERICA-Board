@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Contest } from '../types';
 import ContestModal from '../components/ContestModal';
-import { fetchContestsForUserWeb } from '../services/contestSource';
+import { fetchContestsForUserWeb } from '../src/services/contestSource';
 
 const CalendarPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
