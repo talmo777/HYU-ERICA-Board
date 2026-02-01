@@ -1,0 +1,200 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, ArrowRight } from 'lucide-react';
+import ContestCard from '../components/ContestCard';
+import ContestModal from '../components/ContestModal';
+import { mockContests } from '../data/mockContests';
+import { Contest } from '../types';
+
+const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
+
+  // 1. Carousel Logic (Imminent Deadlines)
+  const urgentContests = mockContests
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+    .slice(0, 6); // Take top 6 imminent
+  
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const itemsPerPage = 4; // Responsive handling done via CSS hiding, but logical index here
+
+  const nextSlide = () => {
+    if (carouselIndex + 1 <= urgentContests.length - itemsPerPage) {
+        setCarouselIndex(prev => prev + 1);
+    }
+  };
+
+  const prevSlide = () => {
+    if (carouselIndex > 0) {
+        setCarouselIndex(prev => prev - 1);
+    }
+  };
+
+  // 2. Calendar Preview Logic (Next 3 weeks list)
+  const today = new Date();
+  const threeWeeksLater = new Date();
+  threeWeeksLater.setDate(today.getDate() + 21);
+
+  const upcomingEvents = mockContests.filter(c => {
+    const d = new Date(c.deadline);
+    return d >= today && d <= threeWeeksLater;
+  }).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+
+
+  return (
+    <div className="space-y-12">
+      {/* Intro Banner */}
+      <section className="bg-blue-900 rounded-2xl p-8 text-white relative overflow-hidden shadow-lg">
+        <div className="relative z-10 max-w-2xl">
+            <h1 className="text-3xl font-bold mb-4">나에게 딱 맞는 공모전, <br/>에리카에서 찾아보세요.</h1>
+            <p className="text-blue-100 mb-6">
+                교내 각종 대회부터 서포터즈, IC-PBL 프로그램까지.<br/>
+                흩어져 있는 기회들을 한곳에 모았습니다.
+            </p>
+            <button 
+                onClick={() => navigate('/contests')}
+                className="bg-white text-blue-900 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors inline-flex items-center gap-2"
+            >
+                공모전 전체보기 <ArrowRight size={18} />
+            </button>
+        </div>
+        {/* Abstract Deco */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-800 rounded-full mix-blend-multiply filter blur-3xl opacity-50 transform translate-x-1/2 -translate-y-1/2"></div>
+      </section>
+
+      {/* Section 1: Imminent Deadlines Carousel */}
+      <section>
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
+                마감 임박 공모전
+            </h2>
+            <div className="flex gap-2">
+                <button 
+                    onClick={prevSlide}
+                    disabled={carouselIndex === 0}
+                    className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                    <ChevronLeft size={20} />
+                </button>
+                <button 
+                    onClick={nextSlide}
+                    disabled={carouselIndex >= urgentContests.length - itemsPerPage} // Simple logic for desktop
+                    className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                    <ChevronRight size={20} />
+                </button>
+            </div>
+        </div>
+
+        {/* Carousel Container */}
+        <div className="relative overflow-hidden -mx-2">
+            <div 
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${carouselIndex * (100 / itemsPerPage)}%)` }}
+            >
+                {urgentContests.map((contest) => (
+                    <div key={contest.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-2 flex-shrink-0">
+                        <div className="h-full">
+                            <ContestCard contest={contest} onClick={() => setSelectedContest(contest)} />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+        
+        {/* Mobile View Hint */}
+        <p className="text-center text-xs text-slate-400 mt-4 md:hidden">
+            좌우로 스와이프하여 더 보기
+        </p>
+      </section>
+
+      {/* Section 2: Calendar Preview (Timeline) */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+            <div className="flex justify-between items-end mb-6">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
+                    이번 달 주요 일정
+                </h2>
+                <button 
+                    onClick={() => navigate('/calendar')}
+                    className="text-sm text-slate-500 hover:text-blue-900 font-medium flex items-center"
+                >
+                    캘린더 전체보기 <ChevronRight size={16} />
+                </button>
+            </div>
+            
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+                {upcomingEvents.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400">
+                        예정된 마감 일정이 없습니다.
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {upcomingEvents.map((event) => (
+                            <div 
+                                key={event.id} 
+                                onClick={() => setSelectedContest(event)}
+                                className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group"
+                            >
+                                <div className="flex-shrink-0 w-16 text-center">
+                                    <div className="text-xs text-slate-500 uppercase font-semibold">
+                                        {new Date(event.deadline).toLocaleDateString('en-US', { month: 'short' })}
+                                    </div>
+                                    <div className="text-xl font-bold text-slate-800">
+                                        {new Date(event.deadline).getDate()}
+                                    </div>
+                                </div>
+                                <div className="w-px h-10 bg-slate-200"></div>
+                                <div className="flex-grow">
+                                    <div className="text-xs text-blue-600 font-medium mb-1">{event.category}</div>
+                                    <h4 className="text-slate-900 font-medium group-hover:text-blue-900 line-clamp-1">{event.title}</h4>
+                                </div>
+                                <div className="flex-shrink-0 hidden sm:block">
+                                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                        마감일
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+
+        {/* Mini Banner / Widget */}
+        <div className="md:col-span-1 space-y-6">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
+                <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
+                <p className="text-sm text-slate-300 mb-4">
+                    공모전 처음이신가요? <br/>
+                    팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
+                </p>
+                <button onClick={() => navigate('/guide')} className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20">
+                    가이드 보러가기
+                </button>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                 <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
+                 <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
+                    <li>IC-PBL 수강 시 마일리지 적립</li>
+                    <li>비교과 포인트 장학금 신청 기간 확인</li>
+                    <li>창업 동아리 지원금 추가 모집</li>
+                 </ul>
+            </div>
+        </div>
+      </section>
+
+      {/* Details Modal */}
+      <ContestModal 
+        isOpen={!!selectedContest} 
+        contest={selectedContest} 
+        onClose={() => setSelectedContest(null)} 
+      />
+    </div>
+  );
+};
+
+export default Home;
