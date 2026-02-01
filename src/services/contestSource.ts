@@ -1,6 +1,6 @@
-// services/contestSource.ts
-import { Contest, Category } from "../types";
-import { mockContests } from "../data/mockContests";
+// src/services/contestSource.ts
+import { Contest, Category } from "../../types";
+import { mockContests } from "../../data/mockContests";
 
 const STORAGE_KEY_CONTESTS = "erica_contests_v1";
 
@@ -32,30 +32,32 @@ function coerceCategory(input?: string): Category {
   if (input === "IC-PBL") return "IC-PBL";
   if (input === "교내 공모전") return "교내 공모전";
   if (input === "대외활동") return "대외활동";
-  // 기본값
   return "교내 공모전";
 }
 
 function mapAdminToPublic(c: AdminStoredContest): Contest {
-  const deadline = toDateOnly(c.endDate) ?? toDateOnly(c.startDate) ?? toDateOnly(new Date().toISOString())!;
+  const deadline =
+    toDateOnly(c.endDate) ??
+    toDateOnly(c.startDate) ??
+    toDateOnly(new Date().toISOString())!;
+
   const start = toDateOnly(c.startDate);
 
   const targets = Array.isArray(c.targets) ? c.targets : [];
   const targetText = targets.length ? targets.join(", ") : "전체";
 
   const apply = c.applyUrl ?? "";
-  // source_url이 관리자 스키마에 없어서 임시로 applyUrl로 대체 (2단계에서 분리 예정)
-  const source = apply;
+  const source = apply; // 2단계에서 source_url(원문 링크) 분리 예정
 
   return {
     id: String(c.id),
     title: c.title ?? "(제목 없음)",
-    organizer: targets[0] ?? "한양대 ERICA",     // 임시: 첫 타겟을 주관으로 간주
+    organizer: targets[0] ?? "한양대 ERICA", // 임시: 첫 타겟을 주관으로 간주
     category: coerceCategory(c.category),
     start_date: start,
     end_date: deadline,
     deadline,
-    tags: targets.slice(0, 5),                   // 임시: 타겟을 태그로도 노출 (원하면 2단계에서 tags 분리)
+    tags: targets.slice(0, 5), // 임시: 타겟을 태그로도 노출(추후 분리 가능)
     target: targetText,
     summary: c.description ?? "",
     source_url: source,
@@ -65,13 +67,16 @@ function mapAdminToPublic(c: AdminStoredContest): Contest {
 }
 
 export async function fetchContestsForUserWeb(): Promise<Contest[]> {
-  // 통합 전/데이터 없을 때도 사용자 웹이 살아있게 mock fallback 유지
-  const raw = localStorage.getItem(STORAGE_KEY_CONTESTS);
+  // 빌드/SSR 안전 가드
+  if (typeof window === "undefined") return mockContests;
+
+  const raw = window.localStorage.getItem(STORAGE_KEY_CONTESTS);
   if (!raw) return mockContests;
 
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return mockContests;
+
     const mapped = parsed.map(mapAdminToPublic);
     return mapped.length ? mapped : mockContests;
   } catch {
