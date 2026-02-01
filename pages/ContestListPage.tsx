@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
 import ContestCard from "../components/ContestCard";
 import ContestModal from "../components/ContestModal";
-import { fetchContestsForUserWeb } from "../services/contestSource";
+import { fetchContestsForUserWeb } from "../src/services/contestSource";
 import { Contest, Category } from "../types";
 
 const ContestListPage: React.FC = () => {
