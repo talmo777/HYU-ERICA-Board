@@ -16,10 +16,12 @@ export default function StartupClubSupportPage() {
         {
           label: '창업교육센터 공지 확인',
           href: 'https://startup.hanyang.ac.kr',
+          variant: 'primary'
         },
         {
           label: 'HY-LU-E 바로가기',
           href: 'https://hylue.hanyang.ac.kr',
+          variant: 'secondary'
         },
       ]}
     />
