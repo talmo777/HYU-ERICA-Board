@@ -62,7 +62,7 @@ function mapApiToPublic(c: ApiContest): Contest {
 }
 
 export async function fetchContestsForUserWeb(): Promise<Contest[]> {
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const API_BASE = (import.meta.env.VITE_BOARD_API_BASE_URL as string | undefined)?.replace(/\/+$/, "");
 
   // 빌드/SSR 안전 가드
   if (typeof window === "undefined") return mockContests;
