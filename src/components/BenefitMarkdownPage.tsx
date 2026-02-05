@@ -2,9 +2,22 @@ import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+type Highlight = {
+  label: string;
+  value: string;
+  hint?: string;
+};
+
+type Action = {
+  label: string;
+  href: string;
+};
+
 type Props = {
   title: string;
   markdown: string;
+  highlights?: Highlight[];
+  actions?: Action[];
 };
 
 function slugify(text: string) {
@@ -29,11 +42,11 @@ function extractToc(md: string) {
   return toc;
 }
 
-export default function BenefitMarkdownPage({ title, markdown }: Props) {
+export default function BenefitMarkdownPage({ title, markdown, highlights = [], actions = [] }: Props) {
   const toc = useMemo(() => extractToc(markdown), [markdown]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8">
+    <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
       {/* TOC */}
       <aside className="hidden lg:block sticky top-6 h-fit">
         <div className="text-xs font-semibold text-slate-500 mb-2">목차</div>
@@ -57,12 +70,47 @@ export default function BenefitMarkdownPage({ title, markdown }: Props) {
       </aside>
 
       {/* Content */}
-      <main>
-        <div className="mb-6">
+      <main className="space-y-6">
+        {/* Header */}
+        <div>
           <div className="text-sm text-slate-500">놓치기 쉬운 혜택</div>
-          <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mt-1">{title}</h1>
         </div>
 
+        {/* Highlights + Actions */}
+        {(highlights.length > 0 || actions.length > 0) && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+            {highlights.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {highlights.map((h) => (
+                  <div key={h.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-xs font-semibold text-slate-500">{h.label}</div>
+                    <div className="text-lg font-bold text-slate-900 mt-1">{h.value}</div>
+                    {h.hint && <div className="text-xs text-slate-500 mt-1">{h.hint}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {actions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {actions.map((a) => (
+                  <a
+                    key={a.href}
+                    href={a.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50"
+                  >
+                    {a.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Markdown Body */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -89,6 +137,12 @@ export default function BenefitMarkdownPage({ title, markdown }: Props) {
               ul: ({ children }) => <ul className="my-3 space-y-1">{children}</ul>,
               ol: ({ children }) => <ol className="my-3 space-y-1 list-decimal pl-6">{children}</ol>,
               li: ({ children }) => <li className="ml-5 list-disc text-slate-700 leading-7">{children}</li>,
+              blockquote: ({ children }) => (
+                <div className="my-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
+                  {children}
+                </div>
+              ),
+              hr: () => <div className="my-8 border-t border-slate-200" />,
               table: ({ children }) => (
                 <div className="overflow-x-auto my-4">
                   <table className="min-w-[560px] border border-slate-200 rounded-lg">{children}</table>
@@ -103,6 +157,17 @@ export default function BenefitMarkdownPage({ title, markdown }: Props) {
                 <td className="border border-slate-200 px-3 py-2 text-sm text-slate-700">
                   {children}
                 </td>
+              ),
+              // FAQ(아코디언): md에서 <details><summary> 형태 쓰면 스타일만 입힘
+              details: ({ children }) => (
+                <details className="my-3 rounded-xl border border-slate-200 bg-white p-4">
+                  {children}
+                </details>
+              ),
+              summary: ({ children }) => (
+                <summary className="cursor-pointer font-semibold text-slate-900">
+                  {children}
+                </summary>
               ),
             }}
           >
