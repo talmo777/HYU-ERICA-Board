@@ -1,4 +1,3 @@
-[erica-bigo-sch.md](https://github.com/user-attachments/files/25100088/erica-bigo-sch.md)
 # 한양대학교 ERICA 비교과 마일리지 장학금 신청 안내
 
 ## 1. 제도 개요
