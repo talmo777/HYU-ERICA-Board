@@ -13,8 +13,8 @@ export default function IcPblMileagePage() {
         { label: '문의', value: '031-400-4896', hint: 'IC-PBL센터' },
       ]}
       actions={[
-        { label: 'HY-LU-E에서 마일리지 확인', href: '#' },
-        { label: '신청 기간 공지 확인', href: '#' },
+        { label: 'HY-LU-E에서 마일리지 확인', href: 'https://hylu-e.hanyang.ac.kr' },
+        { label: '신청 기간 공지 확인', href: 'https://hylu-e.hanyang.ac.kr' },
       ]}
     />
   );
