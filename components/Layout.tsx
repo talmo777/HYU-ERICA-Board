@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <NavLink to="/" className="flex items-center gap-2">
                 <img className="h-10 w-auto object-contain" src={HYU_LOGO_URL} alt="HYU Logo" />
                 <div className="flex flex-col">
-                  <span className="font-bold text-slate-900 text-lg leading-tight">ERICA</span>
+                  <span className="font-bold text-slate-900 text-lg leading-tight">HY-LINK</span>
                   <span className="text-xs text-slate-500 font-medium tracking-wider">공모전 통합 게시판</span>
                 </div>
               </NavLink>
@@ -132,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Info */}
             <div className="text-center text-sm text-slate-500">
               <p>본 사이트는 한양대학교 ERICA 학생들을 위한 정보 제공용이며, <br/>학교 공식 행정 시스템과는 무관합니다.</p>
-              <p className="mt-2">Copyright © 2024. All rights reserved.</p>
+              <p className="mt-2">Copyright © 2026. All rights reserved.</p>
             </div>
 
             {/* Cooperation */}
