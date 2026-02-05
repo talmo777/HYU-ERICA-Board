@@ -44,23 +44,42 @@ const Home: React.FC = () => {
   return (
     <div className="space-y-12">
       {/* Intro Banner */}
-      <section className="bg-blue-900 rounded-2xl p-8 text-white relative overflow-hidden shadow-lg">
-        <div className="relative z-10 max-w-2xl">
-            <h1 className="text-3xl font-bold mb-4">나에게 딱 맞는 공모전, <br/>에리카에서 찾아보세요.</h1>
-            <p className="text-blue-100 mb-6">
-                교내 각종 대회부터 서포터즈, IC-PBL 프로그램까지.<br/>
-                흩어져 있는 기회들을 한곳에 모았습니다.
-            </p>
-            <button 
-                onClick={() => navigate('/contests')}
-                className="bg-white text-blue-900 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors inline-flex items-center gap-2"
-            >
-                공모전 전체보기 <ArrowRight size={18} />
-            </button>
-        </div>
-        {/* Abstract Deco */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-800 rounded-full mix-blend-multiply filter blur-3xl opacity-50 transform translate-x-1/2 -translate-y-1/2"></div>
-      </section>
+      <section className="relative h-[280px] md:h-[360px] overflow-hidden rounded-2xl shadow-lg">
+        {/* background image */}
+        <img
+          src="https://image2url.com/r2/default/images/1770310683173-385b609a-ee75-4e9f-ad76-5f81ba78dc0c.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+
+        {/* gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#2f3b82]/90 to-[#2f3b82]/70" />
+
+        {/* content */}
+        <div className="relative z-10 h-full p-8 flex items-center">
+         <div className="max-w-2xl text-white">
+           <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+             나에게 딱 맞는 공모전,
+             <br />
+             에리카에서 찾아보세요.
+           </h1>
+
+           <p className="text-white/90 mb-6 leading-relaxed">
+             교내 각종 대회부터 서포터즈, IC-PBL 프로그램까지.
+             <br />
+             흩어져 있는 기회들을 한곳에 모았습니다.
+           </p>
+
+           <button
+             onClick={() => navigate('/contests')}
+             className="bg-white text-[#2f3b82] px-6 py-3 rounded-xl font-semibold hover:bg-slate-100 transition-colors inline-flex items-center gap-2"
+           >
+             공모전 전체보기 <ArrowRight size={18} />
+           </button>
+         </div>
+       </div>
+     </section>
+
 
       {/* Section 1: Imminent Deadlines Carousel */}
       <section>
