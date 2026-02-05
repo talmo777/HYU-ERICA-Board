@@ -15,11 +15,11 @@ export default function BigoMileageScholarshipPage() {
       actions={[
         {
           label: 'HY-LU-E 바로가기',
-          href: 'https://hylue.hanyang.ac.kr',
+          href: 'https://hylu-e.hanyang.ac.kr',
         },
         {
           label: '신청 기간 공지 확인',
-          href: 'https://hylue.hanyang.ac.kr',
+          href: 'https://hylu-e.hanyang.ac.kr',
         },
       ]}
     />
