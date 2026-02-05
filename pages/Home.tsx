@@ -179,10 +179,33 @@ const Home: React.FC = () => {
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                  <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
                  <ul className="text-sm text-slate-600 space-y-2 list-disc pl-4">
-                    <li>IC-PBL 수강 시 마일리지 적립</li>
-                    <li>비교과 포인트 장학금 신청 기간 확인</li>
-                    <li>창업 동아리 지원금 추가 모집</li>
-                 </ul>
+                  <li>
+                    <button
+                      onClick={() => navigate('/benefits/icpbl-mileage')}
+                      className="text-left underline-offset-2 hover:underline hover:text-slate-900"
+                    >
+                      IC-PBL 수강 시 마일리지 적립
+                    </button>
+                  </li>
+
+                  <li>
+                    <button
+                      onClick={() => navigate('/benefits/bigo-mileage-scholarship')}
+                      className="text-left underline-offset-2 hover:underline hover:text-slate-900"
+                    >
+                      비교과 포인트 장학금 신청 기간 확인
+                    </button>
+                  </li>
+
+                  <li>
+                    <button
+                      onClick={() => navigate('/benefits/startup-club-support')}
+                      className="text-left underline-offset-2 hover:underline hover:text-slate-900"
+                    >
+                      창업 동아리 지원금 추가 모집
+                    </button>
+                  </li>
+                </ul>
             </div>
         </div>
       </section>
