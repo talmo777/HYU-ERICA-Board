@@ -54,9 +54,9 @@ const ContestModal: React.FC<ContestModalProps> = ({ contest, isOpen, onClose })
           <div className="px-4 py-6 sm:px-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Image if available, or placeholder info */}
-              <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="h-[220px] md:h-[280px] bg-slate-50 rounded-lg overflow-hidden border flex items-center justify-center">
                  {contest.imageUrl ? (
-                    <img src={contest.imageUrl} alt={contest.title} className="w-full h-full object-cover" />
+                    <img src={contest.imageUrl} alt={contest.title} className="w-full h-full object-contain cursor-zoom-in hover:opacity-95 transition" loading="lazy" onClick={() => window.open(contest.imageUrl!, '_blank', 'noopener,noreferrer')} />
                  ) : (
                     <span className="text-slate-400">이미지 없음</span>
                  )}
