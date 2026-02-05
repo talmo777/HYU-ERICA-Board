@@ -1,4 +1,3 @@
-[erica-startup-club.md](https://github.com/user-attachments/files/25099988/erica-startup-club.md)
 # 한양대학교 ERICA 창업동아리 지원금 및 추가 모집 안내
 
 ## 1. 제도 개요 (도메인 설명)
