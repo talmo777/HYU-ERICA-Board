@@ -16,10 +16,12 @@ export default function BigoMileageScholarshipPage() {
         {
           label: 'HY-LU-E 바로가기',
           href: 'https://hylu-e.hanyang.ac.kr',
+          variant: 'primary'
         },
         {
           label: '신청 기간 공지 확인',
           href: 'https://hylu-e.hanyang.ac.kr',
+          variant: 'secondary'
         },
       ]}
     />
