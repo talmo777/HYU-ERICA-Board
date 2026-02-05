@@ -53,7 +53,7 @@ const Home: React.FC = () => {
         />
 
         {/* gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#2f3b82]/90 to-[#2f3b82]/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0b102d]/90 via-[#2f3b82]/75 to-transparent" />
 
         {/* content */}
         <div className="relative z-10 h-full p-8 flex items-center">
