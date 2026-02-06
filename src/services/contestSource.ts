@@ -64,7 +64,7 @@ function mapApiToPublic(c: ApiContest): Contest {
     deadline: end ?? today,
     tags: targets.slice(0, 5),
     target: targetText,
-    summary: c.description ?? "",
+    summary: cleanSummary(c.description ?? ""),
     source_url: source,
     apply_url: apply,
     imageUrl: c.poster_url ?? undefined,
