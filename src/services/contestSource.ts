@@ -1,6 +1,6 @@
 // src/services/contestSource.ts
 import { Contest, Category } from "../../types";
-import { mockContests } from "../../data/mockContests";
+
 
 type ApiContest = {
   id: string;
