@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, ArrowRight } from 'lucide-react';
 import ContestCard from '../components/ContestCard';
 import ContestModal from '../components/ContestModal';
-import { mockContests } from '../data/mockContests';
+import { fetchContestsForUserWeb } from '../src/services/contestSource';
 import { Contest } from '../types';
 
 const Home: React.FC = () => {
@@ -11,7 +11,7 @@ const Home: React.FC = () => {
   const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
 
   // 1. Carousel Logic (Imminent Deadlines)
-  const urgentContests = mockContests
+  const urgentContests = fetchContestsForUserWeb
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
     .slice(0, 6); // Take top 6 imminent
   
@@ -35,7 +35,7 @@ const Home: React.FC = () => {
   const threeWeeksLater = new Date();
   threeWeeksLater.setDate(today.getDate() + 21);
 
-  const upcomingEvents = mockContests.filter(c => {
+  const upcomingEvents = fetchContestsForUserWeb.filter(c => {
     const d = new Date(c.deadline);
     return d >= today && d <= threeWeeksLater;
   }).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
