@@ -1,7 +1,6 @@
 // src/services/contestSource.ts
 import { Contest, Category } from "../../types";
 
-
 type ApiContest = {
   id: string;
   title: string;
@@ -20,7 +19,6 @@ type ApiContest = {
 };
 
 function coerceCategory(input?: string): Category {
-  // API/DB 값이 'IC-PBL' 또는 'ICPBL' 둘 다 올 수 있어서 둘 다 허용
   if (input === "서포터즈") return "서포터즈";
   if (input === "IC-PBL" || input === "ICPBL") return "IC-PBL";
   if (input === "대외활동") return "대외활동";
@@ -44,6 +42,9 @@ function mapApiToPublic(c: ApiContest): Contest {
   const apply = c.apply_url ?? "";
   const source = c.source_url ?? apply;
 
+  // deadline은 types.ts에서 필수라서 end가 없으면 오늘로 채움(안정성)
+  const today = new Date().toISOString().split("T")[0];
+
   return {
     id: String(c.id),
     title: c.title ?? "(제목 없음)",
@@ -51,7 +52,7 @@ function mapApiToPublic(c: ApiContest): Contest {
     category: coerceCategory(c.category),
     start_date: start,
     end_date: end,
-    deadline: end ?? toDateOnly(new Date().toISOString())!,
+    deadline: end ?? today,
     tags: targets.slice(0, 5),
     target: targetText,
     summary: c.description ?? "",
@@ -62,27 +63,22 @@ function mapApiToPublic(c: ApiContest): Contest {
 }
 
 export async function fetchContestsForUserWeb(): Promise<Contest[]> {
-  const API_BASE = (import.meta.env.VITE_BOARD_API_BASE_URL as string | undefined)?.replace(/\/+$/, "");
+  // ✅ 너가 통일하겠다고 한 env 키로 변경
+  const API_BASE_RAW = import.meta.env.VITE_BOARD_API_BASE_URL as string | undefined;
+  const API_BASE = API_BASE_RAW?.replace(/\/+$/, "");
 
-  // 빌드/SSR 안전 가드
-  if (typeof window === "undefined") return [];
-
-  if (!API_BASE) {
-    // env 없으면 기존처럼 mock
-    return [];
-  }
+  if (!API_BASE) return [];
 
   const url = `${API_BASE}/api/v1/contests?status=published`;
-  const res = await fetch(url);
 
-  if (!res.ok) {
-    // API 터지면 mock fallback
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+
+    const data = (await res.json()) as { items: ApiContest[] };
+    const items = Array.isArray(data.items) ? data.items : [];
+    return items.map(mapApiToPublic);
+  } catch {
     return [];
   }
-
-  const data = (await res.json()) as { items: ApiContest[] };
-  const items = Array.isArray(data.items) ? data.items : [];
-
-  const mapped = items.map(mapApiToPublic);
-  return mapped.length ? mapped : [];
 }
