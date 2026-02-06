@@ -65,11 +65,11 @@ export async function fetchContestsForUserWeb(): Promise<Contest[]> {
   const API_BASE = (import.meta.env.VITE_BOARD_API_BASE_URL as string | undefined)?.replace(/\/+$/, "");
 
   // 빌드/SSR 안전 가드
-  if (typeof window === "undefined") return mockContests;
+  if (typeof window === "undefined") return [];
 
   if (!API_BASE) {
     // env 없으면 기존처럼 mock
-    return mockContests;
+    return [];
   }
 
   const url = `${API_BASE}/api/v1/contests?status=published`;
@@ -77,12 +77,12 @@ export async function fetchContestsForUserWeb(): Promise<Contest[]> {
 
   if (!res.ok) {
     // API 터지면 mock fallback
-    return mockContests;
+    return [];
   }
 
   const data = (await res.json()) as { items: ApiContest[] };
   const items = Array.isArray(data.items) ? data.items : [];
 
   const mapped = items.map(mapApiToPublic);
-  return mapped.length ? mapped : mockContests;
+  return mapped.length ? mapped : [];
 }
