@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, ArrowRight } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ArrowRight } from 'lucide-react';
 import ContestCard from '../components/ContestCard';
 import ContestModal from '../components/ContestModal';
 import { fetchContestsForUserWeb } from '../src/services/contestSource';
@@ -10,23 +10,53 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
 
-  // 1. Carousel Logic (Imminent Deadlines)
-  const urgentContests = fetchContestsForUserWeb
-    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-    .slice(0, 6); // Take top 6 imminent
+  const [contest, setContests] = useState<Contest[]>([]);
+  const [loading, setLoading] = useState(true);
   
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const list = await fetchContestsForUserWeb();
+        if (mounted) setContests(list);
+      } catch (e) {
+        console.error(e);
+        if (mounted) setContests([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  
+
+  // 1. Carousel Logic (Imminent Deadlines)
+    // 1. Carousel Logic (Imminent Deadlines)
+  const urgentContests = useMemo(() => {
+    return [...contests]
+      .filter((c) => c.deadline) // deadline은 string YYYY-MM-DD
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+      .slice(0, 6);
+  }, [contests]);
+
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const itemsPerPage = 4; // Responsive handling done via CSS hiding, but logical index here
+  const itemsPerPage = 4;
+
+  useEffect(() => {
+    setCarouselIndex(0);
+  }, [urgentContests.length]);
 
   const nextSlide = () => {
     if (carouselIndex + 1 <= urgentContests.length - itemsPerPage) {
-        setCarouselIndex(prev => prev + 1);
+      setCarouselIndex((prev) => prev + 1);
     }
   };
 
   const prevSlide = () => {
     if (carouselIndex > 0) {
-        setCarouselIndex(prev => prev - 1);
+      setCarouselIndex((prev) => prev - 1);
     }
   };
 
@@ -35,11 +65,14 @@ const Home: React.FC = () => {
   const threeWeeksLater = new Date();
   threeWeeksLater.setDate(today.getDate() + 21);
 
-  const upcomingEvents = fetchContestsForUserWeb.filter(c => {
-    const d = new Date(c.deadline);
-    return d >= today && d <= threeWeeksLater;
-  }).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-
+  const upcomingEvents = useMemo(() => {
+    return [...contests]
+      .filter((c) => {
+        const d = new Date(c.deadline);
+        return d >= today && d <= threeWeeksLater;
+      })
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  }, [contests]);
 
   return (
     <div className="space-y-12">
