@@ -32,6 +32,15 @@ function toDateOnly(input?: string | null): string | undefined {
   return d.toISOString().split("T")[0];
 }
 
+function cleanSummary(raw: string): string {
+  return raw
+    // 맨 앞에 붙는 [AI 요약] 제거 (줄바꿈 포함)
+    .replace(/^\s*\[AI\s*요약\]\s*\n?/u, "")
+    // 혹시 중간에 남는 케이스 대비 (선택)
+    .replace(/\n?\[AI\s*요약\]\n?/gu, "\n")
+    .trim();
+}
+
 function mapApiToPublic(c: ApiContest): Contest {
   const end = toDateOnly(c.end_date);
   const start = toDateOnly(c.start_date);
