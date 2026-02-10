@@ -4,29 +4,26 @@ import ContestCard from "../components/ContestCard";
 import ContestModal from "../components/ContestModal";
 import { fetchContestsForUserWeb } from "../src/services/contestSource";
 import { Contest, Category } from "../types";
-import { isOngoing, isUrgent } from "../src/utils/contestStatus";
+import { getContestStatus } from "../src/utils/contestStatus";
 
-type StatusFilter = "ALL" | "ONGOING" | "URGENT";
+type StatusFilter = "ALL" | "OPEN" | "URGENT"; // OPEN=진행중, URGENT=마감임박(D-7)
 
 const ContestListPage: React.FC = () => {
   const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
 
-  // ✅ 데이터 로딩 상태
   const [contests, setContests] = useState<Contest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // ✅ 필터/검색/정렬 상태
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category | "ALL">("ALL");
   const [sortOrder, setSortOrder] = useState<"DEADLINE" | "NEWEST">("DEADLINE");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ONGOING" | "URGENT">("ALL");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 
   const loadContests = useCallback(async () => {
     try {
       setIsLoading(true);
       setLoadError(null);
-
       const data = await fetchContestsForUserWeb();
       setContests(Array.isArray(data) ? data : []);
     } catch (e: any) {
@@ -37,63 +34,74 @@ const ContestListPage: React.FC = () => {
     }
   }, []);
 
-  // ✅ 최초 1회: 공모전 데이터 로딩
   useEffect(() => {
-    loadContests();
+    let mounted = true;
+    (async () => {
+      if (!mounted) return;
+      await loadContests();
+    })();
+    return () => {
+      mounted = false;
+    };
   }, [loadContests]);
 
-  // ✅ 카테고리 목록 (관리자쪽에서 '대외활동'을 쓸 수도 있어서 포함)
   const categories: (Category | "ALL")[] = useMemo(
     () => ["ALL", "교내 공모전", "서포터즈", "IC-PBL", "대외활동"],
     []
   );
 
-  // ✅ Filter & Sort Logic
+  // (옵션) 날짜 없는 contest는 DEADLINE 정렬에서 맨 뒤로
+  const safeDeadlineMs = (c: Contest) => {
+    const d = c.deadline ? new Date(`${c.deadline}T00:00:00`) : null;
+    const ms = d && !Number.isNaN(d.getTime()) ? d.getTime() : 9e15;
+    return ms;
+  };
+
   const filteredContests = useMemo(() => {
     let result = contests;
 
-    // Status Filter (요청): 접수중(ONGOING), 마감임박(URGENT)
-    if (statusFilter === "ONGOING") {
-      result = result.filter((c) => isOngoing(c, new Date()));
-    } else if (statusFilter === "URGENT") {
-      result = result.filter((c) => isUrgent(c, new Date()));
+    // 0) 상태 필터: 딱 해당 상태만 뜨게
+    if (statusFilter !== "ALL") {
+      result = result.filter((c) => {
+        const st = getContestStatus(c);
+        if (statusFilter === "OPEN") return st === "ONGOING";
+        if (statusFilter === "URGENT") return st === "URGENT";
+        return true;
+      });
     }
 
-    // Category Filter
+    // 1) 카테고리
     if (selectedCategory !== "ALL") {
       result = result.filter((c) => c.category === selectedCategory);
     }
 
-    // Search Filter
-    if (searchTerm.trim()) {
-      const lowerTerm = searchTerm.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.title.toLowerCase().includes(lowerTerm) ||
-          c.organizer.toLowerCase().includes(lowerTerm) ||
-          (Array.isArray(c.tags) && c.tags.some((tag) => tag.toLowerCase().includes(lowerTerm)))
-      );
+    // 2) 검색
+    const q = searchTerm.trim().toLowerCase();
+    if (q) {
+      result = result.filter((c) => {
+        const title = (c.title || "").toLowerCase();
+        const organizer = (c.organizer || "").toLowerCase();
+        const tags = Array.isArray(c.tags) ? c.tags.join(" ").toLowerCase() : "";
+        return title.includes(q) || organizer.includes(q) || tags.includes(q);
+      });
     }
 
-    // Sorting
+    // 3) 정렬
     if (sortOrder === "DEADLINE") {
-      // Closest deadline first
-      result = [...result].sort(
-        (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-      );
+      result = [...result].sort((a, b) => safeDeadlineMs(a) - safeDeadlineMs(b));
     } else {
-      // Newest: id 기준 (추후 createdAt으로 바꿀 수 있음)
-      result = [...result].sort((a, b) => b.id.localeCompare(a.id));
+      // NEWEST: id가 문자열이라면 기존 방식 유지(프로젝트에서 id 생성 규칙에 맞춰)
+      result = [...result].sort((a, b) => String(b.id).localeCompare(String(a.id)));
     }
 
     return result;
-  }, [contests, searchTerm, selectedCategory, sortOrder, statusFilter]);
+  }, [contests, statusFilter, selectedCategory, searchTerm, sortOrder]);
 
   return (
     <div className="flex flex-col md:flex-row gap-8">
-      {/* Sidebar Filters (Desktop) / Top Filters (Mobile) */}
+      {/* Sidebar */}
       <aside className="w-full md:w-64 flex-shrink-0 space-y-6">
-        {/* Category Nav */}
+        {/* Category */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 flex items-center gap-2">
             <Filter size={16} /> 카테고리
@@ -116,41 +124,53 @@ const ContestListPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Status Filter (요청: 버튼 클릭 시 딱 해당 상태만) */}
+        {/* Status Filter */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
             상태 필터
           </h3>
-          <div className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-            {(
-              [
-                { key: "ALL", label: "전체" },
-                { key: "ONGOING", label: "접수중" },
-                { key: "URGENT", label: "마감임박 (D-7)" },
-              ] as const
-            ).map((o) => (
-              <button
-                key={o.key}
-                onClick={() => setStatusFilter(o.key)}
-                className={`flex-shrink-0 text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  statusFilter === o.key
-                    ? "bg-blue-50 text-blue-900 font-bold border border-blue-100"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
+
+          <div className="flex md:flex-col gap-2">
+            <button
+              onClick={() => setStatusFilter("ALL")}
+              className={`px-3 py-2 rounded-md text-sm text-left border transition ${
+                statusFilter === "ALL"
+                  ? "border-blue-200 bg-blue-50 text-blue-900 font-semibold"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              전체
+            </button>
+            <button
+              onClick={() => setStatusFilter("OPEN")}
+              className={`px-3 py-2 rounded-md text-sm text-left border transition ${
+                statusFilter === "OPEN"
+                  ? "border-blue-200 bg-blue-50 text-blue-900 font-semibold"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              접수중
+            </button>
+            <button
+              onClick={() => setStatusFilter("URGENT")}
+              className={`px-3 py-2 rounded-md text-sm text-left border transition ${
+                statusFilter === "URGENT"
+                  ? "border-blue-200 bg-blue-50 text-blue-900 font-semibold"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              마감임박 (D-7)
+            </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main */}
       <div className="flex-grow">
         {/* Search & Sort Bar */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <div className="flex items-center gap-2 flex-grow max-w-lg">
+            <div className="relative flex-grow max-w-lg flex items-center gap-2">
               <div className="relative flex-grow">
                 <input
                   type="text"
@@ -162,14 +182,15 @@ const ContestListPage: React.FC = () => {
                 <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
               </div>
 
-              {/* Reload button (요청) */}
+              {/* Reload Button */}
               <button
-                type="button"
                 onClick={loadContests}
-                className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-slate-300 hover:bg-slate-50 text-slate-600"
-                title="새로고침"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-md border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                disabled={isLoading}
+                title="데이터 새로고침"
+                aria-label="reload"
               >
-                <RotateCw size={18} />
+                <RotateCw size={18} className="text-slate-600" />
               </button>
             </div>
 
@@ -203,7 +224,7 @@ const ContestListPage: React.FC = () => {
           </div>
         )}
 
-        {/* Results + Grid */}
+        {/* Results */}
         {!isLoading && !loadError && (
           <>
             <div className="mb-4 text-sm text-slate-500">
@@ -249,7 +270,3 @@ const ContestListPage: React.FC = () => {
 };
 
 export default ContestListPage;
-
-
-
-
