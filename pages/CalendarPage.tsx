@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Contest } from '../types';
 import ContestModal from '../components/ContestModal';
 import { fetchContestsForUserWeb } from '../src/services/contestSource';
-import { parseYmd, startOfToday ,ymd } from '../src/utils/contestDate';
+import { parseYmd, startOfToday, ymd } from '../src/utils/contestDate';
 
 type FieldKey = '창업' | 'IT/SW' | '디자인' | '마케팅' | '공학' | '인문/사회';
 
@@ -22,6 +22,24 @@ const FIELD_RULES: Record<FieldKey, RegExp> = {
 };
 
 type CalendarEvent = { kind: EventKind; contest: Contest };
+
+/**
+ * ✅ FIX: CalendarPage에서 사용하지만 누락되어 있던 함수
+ * target(마감일) - base(오늘) 일수 차이를 반환
+ *  - 음수: 이미 지남
+ *  - 0: 오늘
+ *  - 양수: 남음
+ */
+function daysUntil(target: Date, base: Date): number {
+  const t0 = startOfToday();
+  t0.setFullYear(base.getFullYear(), base.getMonth(), base.getDate());
+
+  const t1 = startOfToday();
+  t1.setFullYear(target.getFullYear(), target.getMonth(), target.getDate());
+
+  const ms = t1.getTime() - t0.getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
 
 function eventBadge(e: CalendarEvent, today: Date) {
   if (e.kind === 'START') {
