@@ -15,30 +15,6 @@ const Home: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ===== Hero(배너) 아래부터만 사이드바가 따라오도록 제어 =====
-  const heroRef = useRef<HTMLElement | null>(null);
-  const [sidebarActive, setSidebarActive] = useState(false);
-
-  useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-
-    const HEADER_OFFSET = 110; // 헤더 + 여백 (필요 시 80~140 사이 조절)
-
-    const onScroll = () => {
-      const heroBottomDocY =
-        hero.getBoundingClientRect().bottom + window.scrollY;
-      setSidebarActive(window.scrollY > heroBottomDocY - HEADER_OFFSET);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, []);
-
   // ===== contests fetch =====
   useEffect(() => {
     let mounted = true;
@@ -64,41 +40,7 @@ const Home: React.FC = () => {
     [contests]
   );
 
-  // ===== 진행중 캐러셀 =====
-  const [ongoingIndex, setOngoingIndex] = useState(0);
-  const ongoingItemsPerPage = 3;
-
-  useEffect(() => {
-    setOngoingIndex(0);
-  }, [ongoing.length]);
-
-  const nextOngoing = () => {
-    if (ongoingIndex + 1 <= ongoing.length - ongoingItemsPerPage) {
-      setOngoingIndex((p) => p + 1);
-    }
-  };
-  const prevOngoing = () => {
-    if (ongoingIndex > 0) setOngoingIndex((p) => p - 1);
-  };
-
-  // ===== 마감(최근7일) 캐러셀 =====
-  const [closedIndex, setClosedIndex] = useState(0);
-  const closedItemsPerPage = 3;
-
-  useEffect(() => {
-    setClosedIndex(0);
-  }, [closedRecent.length]);
-
-  const nextClosed = () => {
-    if (closedIndex + 1 <= closedRecent.length - closedItemsPerPage) {
-      setClosedIndex((p) => p + 1);
-    }
-  };
-  const prevClosed = () => {
-    if (closedIndex > 0) setClosedIndex((p) => p - 1);
-  };
-
-  // ===== 마감 임박 캐러셀 =====
+  // 마감 임박 캐러셀
   const [carouselIndex, setCarouselIndex] = useState(0);
   const itemsPerPage = 4;
 
@@ -140,7 +82,6 @@ const Home: React.FC = () => {
     <div className="space-y-12">
       {/* Intro Banner */}
       <section
-        ref={heroRef}
         className="relative h-[280px] md:h-[360px] overflow-hidden rounded-2xl shadow-lg"
       >
         <img
@@ -174,7 +115,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ✅ 여기부터 "페이지 전체" 2컬럼 레이아웃 */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-8">
         {/* LEFT: 메인 컨텐츠 */}
         <div className="space-y-12">
           {/* 1) 진행 중인 공모전 */}
@@ -200,49 +141,15 @@ const Home: React.FC = () => {
                 진행 중인 공모전이 없습니다.
               </div>
             ) : (
-              <>
-                <div className="relative overflow-hidden -mx-2">
-                  <div
-                    className="flex transition-transform duration-500 ease-in-out"
-                    style={{
-                      transform: `translateX(-${
-                        ongoingIndex * (100 / ongoingItemsPerPage)
-                      }%)`,
-                    }}
-                  >
-                    {ongoing.map((contest) => (
-                      <div
-                        key={contest.id}
-                        className="w-full sm:w-1/2 lg:w-1/3 px-2 flex-shrink-0"
-                      >
-                        <ContestCard
-                          contest={contest}
-                          onClick={() => setSelectedContest(contest)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {ongoing.length > ongoingItemsPerPage && (
-                  <div className="flex justify-end gap-2 mt-4">
-                    <button
-                      onClick={prevOngoing}
-                      disabled={ongoingIndex === 0}
-                      className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button
-                      onClick={nextOngoing}
-                      disabled={ongoingIndex >= ongoing.length - ongoingItemsPerPage}
-                      className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </div>
-                )}
-              </>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {ongoing.slice(0, 6).map((contest) => (
+                  <ContestCard
+                    key={contest.id}
+                    contest={contest}
+                    onClick={() => setSelectedContest(contest)}
+                  />
+                ))}
+              </div>
             )}
           </section>
 
@@ -328,49 +235,15 @@ const Home: React.FC = () => {
                 최근 7일 내 마감된 공모전이 없습니다.
               </div>
             ) : (
-              <>
-                <div className="relative overflow-hidden -mx-2 opacity-90">
-                  <div
-                    className="flex transition-transform duration-500 ease-in-out"
-                    style={{
-                      transform: `translateX(-${
-                        closedIndex * (100 / closedItemsPerPage)
-                      }%)`,
-                    }}
-                  >
-                    {closedRecent.map((contest) => (
-                      <div
-                        key={contest.id}
-                        className="w-full sm:w-1/2 lg:w-1/3 px-2 flex-shrink-0"
-                      >
-                        <ContestCard
-                          contest={contest}
-                          onClick={() => setSelectedContest(contest)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {closedRecent.length > closedItemsPerPage && (
-                  <div className="flex justify-end gap-2 mt-4">
-                    <button
-                      onClick={prevClosed}
-                      disabled={closedIndex === 0}
-                      className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button
-                      onClick={nextClosed}
-                      disabled={closedIndex >= closedRecent.length - closedItemsPerPage}
-                      className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </div>
-                )}
-              </>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 opacity-90">
+                {closedRecent.slice(0, 6).map((contest) => (
+                  <ContestCard
+                    key={contest.id}
+                    contest={contest}
+                    onClick={() => setSelectedContest(contest)}
+                  />
+                ))}
+              </div>
             )}
           </section>
 
@@ -442,64 +315,64 @@ const Home: React.FC = () => {
         </div>
 
         {/* RIGHT: 배너 지나서부터 따라오는 sticky 위젯 */}
-        <aside className="hidden md:block md:self-start">
-          <div
-            className={[
-              "h-fit space-y-6",
-              "transition-all duration-300 ease-out",
-              sidebarActive ? "sticky top-28 translate-y-0 opacity-100" : "translate-y-2 opacity-95",
-            ].join(" ")}
-          >
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
-              <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
-              <p className="text-sm text-slate-300 mb-4">
-                공모전 처음이신가요? <br />
-                팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
-              </p>
-              <button
-                onClick={() => navigate("/guide")}
-                className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
-              >
-                가이드 보러가기
-              </button>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
-              <ul className="text-sm text-slate-600 space-y-2 list-none">
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/icpbl-mileage")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    IC-PBL 수강 시 마일리지 적립
-                  </button>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    비교과 포인트 장학금 신청 기간 확인
-                  </button>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/startup-club-support")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    창업 동아리 지원금 추가 모집
-                  </button>
-                </li>
-              </ul>
-            </div>
+        <aside className="hidden md:block">
+        {/* 변경 사항:
+            1. 조건부 렌더링({sidebarActive ? ...}) 제거하고 항상 sticky 적용
+            2. transition-all duration-300: 위치 잡을 때 부드러운 애니메이션 추가
+            3. ease-in-out: 가속도 곡선 추가
+         */}
+        <div className="sticky top-28 space-y-6 transition-all duration-300 ease-in-out">
+          
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
+            <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
+            <p className="text-sm text-slate-300 mb-4">
+              공모전 처음이신가요? <br />
+              팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
+            </p>
+            <button
+              onClick={() => navigate("/guide")}
+              className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
+            >
+              가이드 보러가기
+            </button>
           </div>
-        </aside>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
+            <ul className="text-sm text-slate-600 space-y-2 list-none">
+              <li className="flex items-start gap-2">
+                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                <button
+                  onClick={() => navigate("/benefits/icpbl-mileage")}
+                  className="text-left hover:underline hover:text-slate-900"
+                >
+                  IC-PBL 수강 시 마일리지 적립
+                </button>
+              </li>
+
+              <li className="flex items-start gap-2">
+                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                <button
+                  onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
+                  className="text-left hover:underline hover:text-slate-900"
+                >
+                  비교과 포인트 장학금 신청 기간 확인
+                </button>
+              </li>
+
+              <li className="flex items-start gap-2">
+                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                <button
+                  onClick={() => navigate("/benefits/startup-club-support")}
+                  className="text-left hover:underline hover:text-slate-900"
+                >
+                  창업 동아리 지원금 추가 모집
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </aside>
       </div>
 
       <ContestModal
