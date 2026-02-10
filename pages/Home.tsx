@@ -33,13 +33,13 @@ const Home: React.FC = () => {
     };
   }, []);
 
-  // === 1) 기간별 분리 ===
+  // === 기간별 분리 ===
   const { ongoing, urgent, closedRecent } = useMemo(
     () => splitContestsByStatus(contests),
     [contests]
   );
 
-  // === 2) 마감 임박 캐러셀 ===
+  // === 마감 임박 캐러셀 ===
   const [carouselIndex, setCarouselIndex] = useState(0);
   const itemsPerPage = 4;
 
@@ -59,7 +59,7 @@ const Home: React.FC = () => {
     }
   };
 
-  // === 3) 캘린더 프리뷰(기존: 3주 이내 마감) ===
+  // === 캘린더 프리뷰(3주 이내 마감) ===
   const today = startOfToday();
   const threeWeeksLater = new Date(today);
   threeWeeksLater.setDate(today.getDate() + 21);
@@ -214,7 +214,7 @@ const Home: React.FC = () => {
         )}
       </section>
 
-      {/* 3) 마감된 공모전 (마감 후 7일까지만) */}
+      {/* 3) 마감된 공모전 (최근 7일) */}
       <section>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -309,60 +309,72 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Widgets */}
-        {/* Right Widgets */}
+        {/* Right Widgets (Sticky) */}
         <div className="md:col-span-1">
-         <div className="space-y-6 md:sticky md:top-6">
-           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
-             <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
-             <p className="text-sm text-slate-300 mb-4">
-               공모전 처음이신가요? <br />
-               팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
-             </p>
-             <button
-               onClick={() => navigate("/guide")}
-               className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
-             >
-               가이드 보러가기
-             </button>
-           </div>
+          <div className="space-y-6 md:sticky md:top-6">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
+              <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
+              <p className="text-sm text-slate-300 mb-4">
+                공모전 처음이신가요? <br />
+                팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
+              </p>
+              <button
+                onClick={() => navigate("/guide")}
+                className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
+              >
+                가이드 보러가기
+              </button>
+            </div>
 
-           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-             <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
-             <ul className="text-sm text-slate-600 space-y-2 list-none">
-               <li className="flex items-start gap-2">
-                 <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                 <button
-                   onClick={() => navigate("/benefits/icpbl-mileage")}
-                   className="text-left hover:underline hover:text-slate-900"
-                 >
-                   IC-PBL 수강 시 마일리지 적립
-                 </button>
-               </li>
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
+              <ul className="text-sm text-slate-600 space-y-2 list-none">
+                <li className="flex items-start gap-2">
+                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <button
+                    onClick={() => navigate("/benefits/icpbl-mileage")}
+                    className="text-left hover:underline hover:text-slate-900"
+                  >
+                    IC-PBL 수강 시 마일리지 적립
+                  </button>
+                </li>
 
-               <li className="flex items-start gap-2">
-                 <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                 <button
-                   onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
-                   className="text-left hover:underline hover:text-slate-900"
-                 >
-                   비교과 포인트 장학금 신청 기간 확인
-                 </button>
-               </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <button
+                    onClick={() =>
+                      navigate("/benefits/bigo-mileage-scholarship")
+                    }
+                    className="text-left hover:underline hover:text-slate-900"
+                  >
+                    비교과 포인트 장학금 신청 기간 확인
+                  </button>
+                </li>
 
-               <li className="flex items-start gap-2">
-                 <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                 <button
-                   onClick={() => navigate("/benefits/startup-club-support")}
-                   className="text-left hover:underline hover:text-slate-900"
-                 >
-                   창업 동아리 지원금 추가 모집
-                 </button>
-               </li>
-             </ul>
-           </div>
-         </div>
-       </div>
+                <li className="flex items-start gap-2">
+                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <button
+                    onClick={() =>
+                      navigate("/benefits/startup-club-support")
+                    }
+                    className="text-left hover:underline hover:text-slate-900"
+                  >
+                    창업 동아리 지원금 추가 모집
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Details Modal */}
+      <ContestModal
+        isOpen={!!selectedContest}
+        contest={selectedContest}
+        onClose={() => setSelectedContest(null)}
+      />
+    </div>
   );
 };
 
