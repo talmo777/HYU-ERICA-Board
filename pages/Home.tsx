@@ -312,8 +312,8 @@ const Home: React.FC = () => {
         </div>
 
         {/* RIGHT: sticky 위젯 (페이지 전체 범위에서 따라옴) */}
-        <aside className="hidden md:block">
-          <div className="space-y-6 sticky top-6">
+        <aside className="hidden md:block md:self-start">
+          <div className="sticky top-32 h-fit space-y-6">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
               <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
               <p className="text-sm text-slate-300 mb-4">
