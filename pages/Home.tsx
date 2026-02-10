@@ -5,6 +5,7 @@ import ContestCard from '../components/ContestCard';
 import ContestModal from '../components/ContestModal';
 import { fetchContestsForUserWeb } from '../src/services/contestSource';
 import { Contest } from '../types';
+import { isOngoing, isRecentClosed, isUrgent } from '../src/utils/contestStatus';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -31,13 +32,31 @@ const Home: React.FC = () => {
     };
   }, []);
 
-  // 1) 마감 임박(6개)
+  const today = useMemo(() => new Date(), []);
+
+  // Home 분류 (요청)
+  // - 진행중: 마감 8일 이상 남음
+  // - 마감임박: D-7
+  // - 마감됨: 마감 이후 7일까지만 노출
+  const ongoingContests = useMemo(() => {
+    return [...contests]
+      .filter((c) => isOngoing(c, today))
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+  }, [contests, today]);
+
   const urgentContests = useMemo(() => {
     return [...contests]
-      .filter((c) => c.deadline)
+      .filter((c) => isUrgent(c, today))
       .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
       .slice(0, 6);
-  }, [contests]);
+  }, [contests, today]);
+
+  const recentClosedContests = useMemo(() => {
+    return [...contests]
+      .filter((c) => isRecentClosed(c, today))
+      .sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime())
+      .slice(0, 6);
+  }, [contests, today]);
 
   const [carouselIndex, setCarouselIndex] = useState(0);
   const itemsPerPage = 4;
@@ -58,8 +77,7 @@ const Home: React.FC = () => {
     }
   };
 
-  // 2) 3주 이내 일정
-  const today = new Date();
+  // 3) 3주 이내 일정(마감 기준) - 기존 유지
   const threeWeeksLater = new Date();
   threeWeeksLater.setDate(today.getDate() + 21);
 
@@ -105,12 +123,40 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Section 1: Imminent Deadlines Carousel */}
+      {/* Section 1: 진행 중 공모전 */}
       <section>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
-            마감 임박 공모전
+            진행 중인 공모전
+          </h2>
+          <button
+            onClick={() => navigate('/contests')}
+            className="text-sm text-slate-500 hover:text-blue-900 font-medium flex items-center"
+          >
+            전체보기 <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
+        ) : ongoingContests.length === 0 ? (
+          <div className="text-sm text-slate-400 py-6">진행 중인 공모전이 없습니다.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {ongoingContests.slice(0, 6).map((contest) => (
+              <ContestCard key={contest.id} contest={contest} onClick={() => setSelectedContest(contest)} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Section 2: 마감 임박 공모전 (D-7) */}
+      <section>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
+            마감 임박 공모전 (D-7)
           </h2>
           <div className="flex gap-2">
             <button
@@ -133,7 +179,7 @@ const Home: React.FC = () => {
         {loading ? (
           <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
         ) : urgentContests.length === 0 ? (
-          <div className="text-sm text-slate-400 py-6">등록된 공모전이 없습니다.</div>
+          <div className="text-sm text-slate-400 py-6">마감 임박 공모전이 없습니다.</div>
         ) : (
           <>
             <div className="relative overflow-hidden -mx-2">
@@ -267,6 +313,34 @@ const Home: React.FC = () => {
             </ul>
           </div>
         </div>
+      </section>
+
+      {/* Section 4: 마감된 공모전 (마감 후 7일 이내) */}
+      <section>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
+            마감된 공모전 (최근 7일)
+          </h2>
+          <button
+            onClick={() => navigate('/contests')}
+            className="text-sm text-slate-500 hover:text-blue-900 font-medium flex items-center"
+          >
+            전체보기 <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
+        ) : recentClosedContests.length === 0 ? (
+          <div className="text-sm text-slate-400 py-6">최근 마감된 공모전이 없습니다.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentClosedContests.map((contest) => (
+              <ContestCard key={contest.id} contest={contest} onClick={() => setSelectedContest(contest)} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Details Modal */}
