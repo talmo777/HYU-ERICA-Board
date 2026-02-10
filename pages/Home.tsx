@@ -310,65 +310,59 @@ const Home: React.FC = () => {
         </div>
 
         {/* Right Widgets */}
-        <div className="md:col-span-1 space-y-6">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
-            <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
-            <p className="text-sm text-slate-300 mb-4">
-              공모전 처음이신가요? <br />
-              팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
-            </p>
-            <button
-              onClick={() => navigate("/guide")}
-              className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
-            >
-              가이드 보러가기
-            </button>
-          </div>
+        {/* Right Widgets */}
+        <div className="md:col-span-1">
+         <div className="space-y-6 md:sticky md:top-6">
+           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
+             <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
+             <p className="text-sm text-slate-300 mb-4">
+               공모전 처음이신가요? <br />
+               팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
+             </p>
+             <button
+               onClick={() => navigate("/guide")}
+               className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
+             >
+               가이드 보러가기
+             </button>
+           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
-            <ul className="text-sm text-slate-600 space-y-2 list-none">
-              <li className="flex items-start gap-2">
-                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                <button
-                  onClick={() => navigate("/benefits/icpbl-mileage")}
-                  className="text-left hover:underline hover:text-slate-900"
-                >
-                  IC-PBL 수강 시 마일리지 적립
-                </button>
-              </li>
+           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+             <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
+             <ul className="text-sm text-slate-600 space-y-2 list-none">
+               <li className="flex items-start gap-2">
+                 <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                 <button
+                   onClick={() => navigate("/benefits/icpbl-mileage")}
+                   className="text-left hover:underline hover:text-slate-900"
+                 >
+                   IC-PBL 수강 시 마일리지 적립
+                 </button>
+               </li>
 
-              <li className="flex items-start gap-2">
-                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                <button
-                  onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
-                  className="text-left hover:underline hover:text-slate-900"
-                >
-                  비교과 포인트 장학금 신청 기간 확인
-                </button>
-              </li>
+               <li className="flex items-start gap-2">
+                 <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                 <button
+                   onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
+                   className="text-left hover:underline hover:text-slate-900"
+                 >
+                   비교과 포인트 장학금 신청 기간 확인
+                 </button>
+               </li>
 
-              <li className="flex items-start gap-2">
-                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                <button
-                  onClick={() => navigate("/benefits/startup-club-support")}
-                  className="text-left hover:underline hover:text-slate-900"
-                >
-                  창업 동아리 지원금 추가 모집
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* Details Modal */}
-      <ContestModal
-        isOpen={!!selectedContest}
-        contest={selectedContest}
-        onClose={() => setSelectedContest(null)}
-      />
-    </div>
+               <li className="flex items-start gap-2">
+                 <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                 <button
+                   onClick={() => navigate("/benefits/startup-club-support")}
+                   className="text-left hover:underline hover:text-slate-900"
+                 >
+                   창업 동아리 지원금 추가 모집
+                 </button>
+               </li>
+             </ul>
+           </div>
+         </div>
+       </div>
   );
 };
 
