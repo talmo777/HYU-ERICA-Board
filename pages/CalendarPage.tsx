@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Contest } from '../types';
 import ContestModal from '../components/ContestModal';
 import { fetchContestsForUserWeb } from '../src/services/contestSource';
-import { parseYmd, ymd, daysUntil } from '../src/utils/contestDate';
+import { parseYmd, startOfToday ,ymd } from '../src/utils/contestDate';
 
 type FieldKey = '창업' | 'IT/SW' | '디자인' | '마케팅' | '공학' | '인문/사회';
 
