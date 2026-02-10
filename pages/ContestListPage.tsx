@@ -1,9 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Search, Filter, SlidersHorizontal, RotateCw } from "lucide-react";
 import ContestCard from "../components/ContestCard";
 import ContestModal from "../components/ContestModal";
 import { fetchContestsForUserWeb } from "../src/services/contestSource";
 import { Contest, Category } from "../types";
+import { isOngoing, isUrgent } from "../src/utils/contestStatus";
+
+type StatusFilter = "ALL" | "ONGOING" | "URGENT";
 
 const ContestListPage: React.FC = () => {
   const [selectedContest, setSelectedContest] = useState<Contest | null>(null);
@@ -17,34 +20,27 @@ const ContestListPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category | "ALL">("ALL");
   const [sortOrder, setSortOrder] = useState<"DEADLINE" | "NEWEST">("DEADLINE");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ONGOING" | "URGENT">("ALL");
 
-  // ✅ 최초 1회: 공모전 데이터 로딩 (관리자 저장 데이터 or mock fallback)
-  useEffect(() => {
-    let mounted = true;
+  const loadContests = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setLoadError(null);
 
-    (async () => {
-      try {
-        setIsLoading(true);
-        setLoadError(null);
-
-        const data = await fetchContestsForUserWeb();
-        if (!mounted) return;
-
-        setContests(Array.isArray(data) ? data : []);
-      } catch (e: any) {
-        if (!mounted) return;
-        setLoadError(e?.message ?? "공모전 데이터를 불러오지 못했습니다.");
-        setContests([]);
-      } finally {
-        if (!mounted) return;
-        setIsLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
+      const data = await fetchContestsForUserWeb();
+      setContests(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      setLoadError(e?.message ?? "공모전 데이터를 불러오지 못했습니다.");
+      setContests([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  // ✅ 최초 1회: 공모전 데이터 로딩
+  useEffect(() => {
+    loadContests();
+  }, [loadContests]);
 
   // ✅ 카테고리 목록 (관리자쪽에서 '대외활동'을 쓸 수도 있어서 포함)
   const categories: (Category | "ALL")[] = useMemo(
@@ -55,6 +51,13 @@ const ContestListPage: React.FC = () => {
   // ✅ Filter & Sort Logic
   const filteredContests = useMemo(() => {
     let result = contests;
+
+    // Status Filter (요청): 접수중(ONGOING), 마감임박(URGENT)
+    if (statusFilter === "ONGOING") {
+      result = result.filter((c) => isOngoing(c, new Date()));
+    } else if (statusFilter === "URGENT") {
+      result = result.filter((c) => isUrgent(c, new Date()));
+    }
 
     // Category Filter
     if (selectedCategory !== "ALL") {
@@ -84,7 +87,7 @@ const ContestListPage: React.FC = () => {
     }
 
     return result;
-  }, [contests, searchTerm, selectedCategory, sortOrder]);
+  }, [contests, searchTerm, selectedCategory, sortOrder, statusFilter]);
 
   return (
     <div className="flex flex-col md:flex-row gap-8">
@@ -113,20 +116,31 @@ const ContestListPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Additional Filters Mock UI */}
-        <div className="hidden md:block bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+        {/* Status Filter (요청: 버튼 클릭 시 딱 해당 상태만) */}
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
             상태 필터
           </h3>
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input type="checkbox" className="rounded text-blue-900 focus:ring-blue-900" defaultChecked />
-              접수중
-            </label>
-            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input type="checkbox" className="rounded text-blue-900 focus:ring-blue-900" />
-              마감임박 (D-7)
-            </label>
+          <div className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+            {(
+              [
+                { key: "ALL", label: "전체" },
+                { key: "ONGOING", label: "접수중" },
+                { key: "URGENT", label: "마감임박 (D-7)" },
+              ] as const
+            ).map((o) => (
+              <button
+                key={o.key}
+                onClick={() => setStatusFilter(o.key)}
+                className={`flex-shrink-0 text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  statusFilter === o.key
+                    ? "bg-blue-50 text-blue-900 font-bold border border-blue-100"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
           </div>
         </div>
       </aside>
@@ -136,15 +150,27 @@ const ContestListPage: React.FC = () => {
         {/* Search & Sort Bar */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <div className="relative flex-grow max-w-lg">
-              <input
-                type="text"
-                placeholder="공모전 제목, 주최, 태그 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm"
-              />
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+            <div className="flex items-center gap-2 flex-grow max-w-lg">
+              <div className="relative flex-grow">
+                <input
+                  type="text"
+                  placeholder="공모전 제목, 주최, 태그 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-sm"
+                />
+                <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+              </div>
+
+              {/* Reload button (요청) */}
+              <button
+                type="button"
+                onClick={loadContests}
+                className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-slate-300 hover:bg-slate-50 text-slate-600"
+                title="새로고침"
+              >
+                <RotateCw size={18} />
+              </button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -171,11 +197,8 @@ const ContestListPage: React.FC = () => {
         {!isLoading && loadError && (
           <div className="bg-white rounded-lg p-12 text-center border border-slate-200 border-dashed">
             <p className="text-slate-500 mb-3">{loadError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-blue-900 text-sm font-medium hover:underline"
-            >
-              새로고침
+            <button onClick={loadContests} className="text-blue-900 text-sm font-medium hover:underline">
+              다시 불러오기
             </button>
           </div>
         )}
@@ -204,6 +227,7 @@ const ContestListPage: React.FC = () => {
                   onClick={() => {
                     setSearchTerm("");
                     setSelectedCategory("ALL");
+                    setStatusFilter("ALL");
                   }}
                   className="mt-4 text-blue-900 text-sm font-medium hover:underline"
                 >
