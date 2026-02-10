@@ -15,29 +15,6 @@ const Home: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ===== Hero(배너) 아래부터만 사이드바가 따라오도록 제어 =====
-  const heroRef = useRef<HTMLElement | null>(null);
-  const [sidebarActive, setSidebarActive] = useState(false);
-
-  useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-
-    const HEADER_OFFSET = 110; // 헤더 + 여백 (필요 시 80~140 사이 조절)
-
-    const onScroll = () => {
-      const heroBottomDocY = hero.getBoundingClientRect().bottom + window.scrollY;
-      setSidebarActive(window.scrollY > heroBottomDocY - HEADER_OFFSET);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, []);
-
   // ===== contests fetch =====
   useEffect(() => {
     let mounted = true;
@@ -105,7 +82,6 @@ const Home: React.FC = () => {
     <div className="space-y-12">
       {/* Intro Banner */}
       <section
-        ref={heroRef}
         className="relative h-[280px] md:h-[360px] overflow-hidden rounded-2xl shadow-lg"
       >
         <img
@@ -340,57 +316,63 @@ const Home: React.FC = () => {
 
         {/* RIGHT: 배너 지나서부터 따라오는 sticky 위젯 */}
         <aside className="hidden md:block">
-          <div className={"sticky top-28 space-y-6"}>
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
-              <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
-              <p className="text-sm text-slate-300 mb-4">
-                공모전 처음이신가요? <br />
-                팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
-              </p>
-              <button
-                onClick={() => navigate("/guide")}
-                className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
-              >
-                가이드 보러가기
-              </button>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
-              <ul className="text-sm text-slate-600 space-y-2 list-none">
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/icpbl-mileage")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    IC-PBL 수강 시 마일리지 적립
-                  </button>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    비교과 포인트 장학금 신청 기간 확인
-                  </button>
-                </li>
-
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/startup-club-support")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    창업 동아리 지원금 추가 모집
-                  </button>
-                </li>
-              </ul>
-            </div>
+        {/* 변경 사항:
+            1. 조건부 렌더링({sidebarActive ? ...}) 제거하고 항상 sticky 적용
+            2. transition-all duration-300: 위치 잡을 때 부드러운 애니메이션 추가
+            3. ease-in-out: 가속도 곡선 추가
+         */}
+        <div className="sticky top-28 space-y-6 transition-all duration-300 ease-in-out">
+          
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
+            <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
+            <p className="text-sm text-slate-300 mb-4">
+              공모전 처음이신가요? <br />
+              팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
+            </p>
+            <button
+              onClick={() => navigate("/guide")}
+              className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
+            >
+              가이드 보러가기
+            </button>
           </div>
-        </aside>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
+            <ul className="text-sm text-slate-600 space-y-2 list-none">
+              <li className="flex items-start gap-2">
+                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                <button
+                  onClick={() => navigate("/benefits/icpbl-mileage")}
+                  className="text-left hover:underline hover:text-slate-900"
+                >
+                  IC-PBL 수강 시 마일리지 적립
+                </button>
+              </li>
+
+              <li className="flex items-start gap-2">
+                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                <button
+                  onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
+                  className="text-left hover:underline hover:text-slate-900"
+                >
+                  비교과 포인트 장학금 신청 기간 확인
+                </button>
+              </li>
+
+              <li className="flex items-start gap-2">
+                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                <button
+                  onClick={() => navigate("/benefits/startup-club-support")}
+                  className="text-left hover:underline hover:text-slate-900"
+                >
+                  창업 동아리 지원금 추가 모집
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </aside>
       </div>
 
       <ContestModal
