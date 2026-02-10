@@ -139,7 +139,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ✅ 여기부터 "페이지 전체" 2컬럼 레이아웃 */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-8">
         {/* LEFT: 메인 컨텐츠 */}
         <div className="space-y-12">
           {/* 1) 진행 중인 공모전 */}
@@ -339,8 +339,8 @@ const Home: React.FC = () => {
         </div>
 
         {/* RIGHT: 배너 지나서부터 따라오는 sticky 위젯 */}
-        <aside className="hidden md:block md:self-start">
-          <div className={sidebarActive ? "sticky top-28 h-fit space-y-6" : "space-y-6"}>
+        <aside className="hidden md:block">
+          <div className={"sticky top-28 space-y-6"}>
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
               <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
               <p className="text-sm text-slate-300 mb-4">
