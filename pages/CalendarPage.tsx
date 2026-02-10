@@ -4,12 +4,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Contest } from '../types';
 import ContestModal from '../components/ContestModal';
 import { fetchContestsForUserWeb } from '../src/services/contestSource';
+import { parseYmd, ymd, daysUntil } from '../src/utils/contestDate';
 
 type FieldKey = '창업' | 'IT/SW' | '디자인' | '마케팅' | '공학' | '인문/사회';
 
 type PrizeRange = 'ALL' | 'UNDER_100' | '100_300' | '300_1000' | 'OVER_1000';
 
-type Phase = 'UPCOMING' | 'OPEN' | 'DEADLINE' | 'CLOSED';
+type EventKind = 'START' | 'DEADLINE';
 
 const FIELD_RULES: Record<FieldKey, RegExp> = {
   '창업': /창업|스타트업|사업화|BM|아이디어/i,
@@ -20,53 +21,20 @@ const FIELD_RULES: Record<FieldKey, RegExp> = {
   '인문/사회': /인문|사회|글쓰기|에세이|독서|정책|문화|역사/i,
 };
 
-function ymd(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-function parseYmd(s?: string): Date | null {
-  if (!s) return null;
-  const d = new Date(`${s}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-function daysDiff(a: Date, b: Date): number {
-  const ms = 24 * 60 * 60 * 1000;
-  return Math.floor((a.getTime() - b.getTime()) / ms);
-}
+type CalendarEvent = { kind: EventKind; contest: Contest };
 
-function getPhase(c: Contest, today: Date): Phase {
-  const start = parseYmd(c.start_date);
-  const end = parseYmd(c.deadline) ?? parseYmd(c.end_date);
-
-  if (!end) return 'OPEN'; // deadline 없으면 그냥 open 취급
-
-  // 오늘 기준: 오늘이 마감 지난 뒤면 CLOSED
-  if (daysDiff(today, end) > 0) return 'CLOSED';
-
-  // start_date가 있고, 시작 전이면 UPCOMING
-  if (start && daysDiff(start, today) > 0) return 'UPCOMING';
-
-  // 마감 임박(3일 이내)이면 DEADLINE
-  const dleft = -daysDiff(today, end); // end - today
-  if (dleft <= 3) return 'DEADLINE';
-
-  return 'OPEN';
-}
-
-function phaseBadge(phase: Phase) {
-  // tailwind 색상만으로 구분 (요청: 신청 시작/접수중/신청 마감)
-  switch (phase) {
-    case 'UPCOMING':
-      return { label: '신청 시작', cls: 'bg-slate-100 text-slate-700' };
-    case 'OPEN':
-      return { label: '접수 중', cls: 'bg-emerald-100 text-emerald-800' };
-    case 'DEADLINE':
-      return { label: '신청 마감', cls: 'bg-orange-100 text-orange-800' };
-    case 'CLOSED':
-      return { label: '마감', cls: 'bg-slate-200 text-slate-600' };
+function eventBadge(e: CalendarEvent, today: Date) {
+  if (e.kind === 'START') {
+    return { label: '신청 시작', cls: 'bg-blue-100 text-blue-800' };
   }
+
+  // DEADLINE: 오늘 기준으로 과거면 회색(신청 마감), 미래/오늘이면 빨강(마감일)
+  const end = parseYmd(e.contest.deadline) ?? parseYmd(e.contest.end_date);
+  if (!end) return { label: '마감일', cls: 'bg-red-100 text-red-800' };
+
+  const dleft = daysUntil(end, today);
+  if (dleft < 0) return { label: '신청 마감', cls: 'bg-slate-200 text-slate-700' };
+  return { label: '마감일', cls: 'bg-red-100 text-red-800' };
 }
 
 function parsePrizeKRW(summary: string): number | null {
@@ -168,22 +136,32 @@ const CalendarPage: React.FC = () => {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
 
-  // 달력 표시: 마감(deadline) 기준으로 날짜에 찍되, phase 라벨/색상 적용
-  const eventsByDate: Record<number, Contest[]> = useMemo(() => {
-    const map: Record<number, Contest[]> = {};
+  // 달력 표시: (요청) 신청 시작(start_date), 마감일(deadline/end_date), 신청 마감(마감 이후엔 같은 날짜에 회색)
+  const eventsByDate: Record<number, CalendarEvent[]> = useMemo(() => {
+    const map: Record<number, CalendarEvent[]> = {};
+
+    const add = (date: Date, e: CalendarEvent) => {
+      if (date.getFullYear() !== year || date.getMonth() !== month) return;
+      const day = date.getDate();
+      if (!map[day]) map[day] = [];
+      map[day].push(e);
+    };
+
     filteredContests.forEach((c) => {
+      const start = parseYmd(c.start_date);
       const end = parseYmd(c.deadline) ?? parseYmd(c.end_date);
-      if (!end) return;
-      if (end.getFullYear() === year && end.getMonth() === month) {
-        const day = end.getDate();
-        if (!map[day]) map[day] = [];
-        map[day].push(c);
-      }
+
+      if (start) add(start, { kind: 'START', contest: c });
+      if (end) add(end, { kind: 'DEADLINE', contest: c });
     });
 
+    // stable sort: START first then DEADLINE, then title
     Object.keys(map).forEach((k) => {
       const d = Number(k);
-      map[d].sort((a, b) => (a.deadline || '').localeCompare(b.deadline || '') || a.title.localeCompare(b.title, 'ko'));
+      map[d].sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === 'START' ? -1 : 1;
+        return a.contest.title.localeCompare(b.contest.title, 'ko');
+      });
     });
 
     return map;
@@ -216,17 +194,16 @@ const CalendarPage: React.FC = () => {
         </div>
 
         <div className="space-y-1">
-          {dayEvents.slice(0, 3).map((event) => {
-            const phase = getPhase(event, new Date());
-            const b = phaseBadge(phase);
+          {dayEvents.slice(0, 3).map((e) => {
+            const b = eventBadge(e, new Date());
             return (
               <button
-                key={event.id}
-                onClick={() => setSelectedContest(event)}
+                key={`${e.kind}-${e.contest.id}`}
+                onClick={() => setSelectedContest(e.contest)}
                 className={`block w-full text-left text-[11px] px-1.5 py-1 rounded truncate border border-transparent hover:border-slate-200 transition ${b.cls}`}
-                title={event.title}
+                title={e.contest.title}
               >
-                <span className="font-semibold mr-1">[{b.label}]</span>{event.title}
+                <span className="font-semibold mr-1">[{b.label}]</span>{e.contest.title}
               </button>
             );
           })}
