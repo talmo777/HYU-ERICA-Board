@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronLeft, ArrowRight } from "lucide-react";
 import ContestCard from "../components/ContestCard";
@@ -7,6 +7,134 @@ import { fetchContestsForUserWeb } from "../src/services/contestSource";
 import { Contest } from "../types";
 import { splitContestsByStatus } from "../src/utils/contestStatus";
 import { parseYmd, startOfToday } from "../src/utils/contestDate";
+
+// [Custom Hook] 화면 크기에 따라 보여줄 아이템 개수 계산
+const useItemsPerView = (desktopCount: number) => {
+  const [items, setItems] = useState(desktopCount);
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 640) setItems(1);       // 모바일: 1개
+      else if (w < 1024) setItems(2); // 태블릿: 2개
+      else setItems(desktopCount);    // 데스크탑: 설정값
+    };
+    update(); // 초기 실행
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [desktopCount]);
+
+  return items;
+};
+
+// [Component] 재사용 가능한 캐러셀 섹션
+interface ContestCarouselProps {
+  title: string;
+  contests: Contest[];
+  loading: boolean;
+  emptyMessage: string;
+  onContestClick: (c: Contest) => void;
+  onViewAll?: () => void;
+  desktopCount?: number; // PC 화면에서 보여줄 개수 (기본 3)
+}
+
+const ContestCarouselSection: React.FC<ContestCarouselProps> = ({
+  title,
+  contests,
+  loading,
+  emptyMessage,
+  onContestClick,
+  onViewAll,
+  desktopCount = 3,
+}) => {
+  const [index, setIndex] = useState(0);
+  const itemsPerView = useItemsPerView(desktopCount);
+
+  // 데이터 변경 시 인덱스 초기화
+  useEffect(() => {
+    setIndex(0);
+  }, [contests.length, itemsPerView]);
+
+  const maxIndex = Math.max(0, contests.length - itemsPerView);
+
+  const prev = () => setIndex((i) => Math.max(i - 1, 0));
+  const next = () => setIndex((i) => Math.min(i + 1, maxIndex));
+
+  // 아이템 너비 클래스 계산
+  const widthClass =
+    desktopCount === 2
+      ? "w-full sm:w-1/2 lg:w-1/2" // 2개씩 보기
+      : "w-full sm:w-1/2 lg:w-1/3"; // 3개씩 보기
+
+  return (
+    <section>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
+          {title}
+        </h2>
+
+        <div className="flex items-center gap-3">
+          {/* 화살표 버튼 그룹 */}
+          <div className="flex gap-1">
+            <button
+              onClick={prev}
+              disabled={index === 0 || loading || contests.length === 0}
+              className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              onClick={next}
+              disabled={index >= maxIndex || loading || contests.length === 0}
+              className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          {onViewAll && (
+            <button
+              onClick={onViewAll}
+              className="text-sm text-slate-500 hover:text-blue-900 font-medium flex items-center ml-2"
+            >
+              전체보기 <ChevronRight size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
+      ) : contests.length === 0 ? (
+        <div className="text-sm text-slate-400 py-6">{emptyMessage}</div>
+      ) : (
+        <div className="relative overflow-hidden -mx-2 px-2">
+          <div
+            className="flex transition-transform duration-500 ease-in-out"
+            style={{
+              transform: `translateX(-${index * (100 / itemsPerView)}%)`,
+            }}
+          >
+            {contests.map((contest) => (
+              <div key={contest.id} className={`${widthClass} px-3 flex-shrink-0`}>
+                <div className="h-full">
+                  <ContestCard
+                    contest={contest}
+                    onClick={() => onContestClick(contest)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-xs text-slate-400 mt-4 md:hidden">
+            버튼을 눌러 좌우로 이동하세요.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+};
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -40,26 +168,6 @@ const Home: React.FC = () => {
     [contests]
   );
 
-  // 마감 임박 캐러셀
-  const [carouselIndex, setCarouselIndex] = useState(0);
-  const itemsPerPage = 4;
-
-  useEffect(() => {
-    setCarouselIndex(0);
-  }, [urgent.length]);
-
-  const nextSlide = () => {
-    if (carouselIndex + 1 <= urgent.length - itemsPerPage) {
-      setCarouselIndex((prev) => prev + 1);
-    }
-  };
-
-  const prevSlide = () => {
-    if (carouselIndex > 0) {
-      setCarouselIndex((prev) => prev - 1);
-    }
-  };
-
   // 캘린더 프리뷰(3주 이내 마감)
   const today = startOfToday();
   const threeWeeksLater = new Date(today);
@@ -81,9 +189,7 @@ const Home: React.FC = () => {
   return (
     <div className="space-y-12">
       {/* Intro Banner */}
-      <section
-        className="relative h-[280px] md:h-[360px] overflow-hidden rounded-2xl shadow-lg"
-      >
+      <section className="relative h-[280px] md:h-[360px] overflow-hidden rounded-2xl shadow-lg">
         <img
           src="https://image2url.com/r2/default/images/1770310683173-385b609a-ee75-4e9f-ad76-5f81ba78dc0c.png"
           alt=""
@@ -114,140 +220,43 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ✅ 여기부터 "페이지 전체" 2컬럼 레이아웃 */}
+      {/* ✅ 페이지 전체 2컬럼 레이아웃 */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-8">
         {/* LEFT: 메인 컨텐츠 */}
         <div className="space-y-12">
-          {/* 1) 진행 중인 공모전 */}
-          <section>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
-                진행 중인 공모전
-              </h2>
+          
+          {/* 1) 진행 중인 공모전 (Carousel 적용) */}
+          <ContestCarouselSection
+            title="진행 중인 공모전"
+            contests={ongoing}
+            loading={loading}
+            emptyMessage="진행 중인 공모전이 없습니다."
+            onContestClick={setSelectedContest}
+            onViewAll={() => navigate("/contests")}
+            desktopCount={3} // 한 줄에 3개
+          />
 
-              <button
-                onClick={() => navigate("/contests")}
-                className="text-sm text-slate-500 hover:text-blue-900 font-medium flex items-center"
-              >
-                전체보기 <ChevronRight size={16} />
-              </button>
-            </div>
+          {/* 2) 마감 임박 공모전 (Carousel 적용) */}
+          <ContestCarouselSection
+            title="마감 임박 공모전 (D-7)"
+            contests={urgent}
+            loading={loading}
+            emptyMessage="마감 임박 공모전이 없습니다."
+            onContestClick={setSelectedContest}
+            desktopCount={2} // 강조를 위해 한 줄에 2개 (카드가 커짐)
+          />
 
-            {loading ? (
-              <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
-            ) : ongoing.length === 0 ? (
-              <div className="text-sm text-slate-400 py-6">
-                진행 중인 공모전이 없습니다.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ongoing.slice(0, 6).map((contest) => (
-                  <ContestCard
-                    key={contest.id}
-                    contest={contest}
-                    onClick={() => setSelectedContest(contest)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          {/* 3) 마감된 공모전 (Carousel 적용) */}
+          <ContestCarouselSection
+            title="마감된 공모전 (최근 7일)"
+            contests={closedRecent}
+            loading={loading}
+            emptyMessage="최근 7일 내 마감된 공모전이 없습니다."
+            onContestClick={setSelectedContest}
+            desktopCount={3} // 한 줄에 3개
+          />
 
-          {/* 2) 마감 임박 공모전 (D-7) */}
-          <section>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
-                마감 임박 공모전 (D-7)
-              </h2>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={prevSlide}
-                  disabled={carouselIndex === 0}
-                  className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={nextSlide}
-                  disabled={carouselIndex >= urgent.length - itemsPerPage}
-                  className="p-2 rounded-full border border-slate-300 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
-            ) : urgent.length === 0 ? (
-              <div className="text-sm text-slate-400 py-6">
-                마감 임박 공모전이 없습니다.
-              </div>
-            ) : (
-              <>
-                <div className="relative overflow-hidden -mx-2">
-                  <div
-                    className="flex transition-transform duration-500 ease-in-out"
-                    style={{
-                      transform: `translateX(-${
-                        carouselIndex * (100 / itemsPerPage)
-                      }%)`,
-                    }}
-                  >
-                    {urgent.map((contest) => (
-                      <div
-                        key={contest.id}
-                        className="w-full sm:w-1/2 md:w-1/2 lg:w-1/2 px-2 flex-shrink-0"
-                      >
-                        <div className="h-full">
-                          <ContestCard
-                            contest={contest}
-                            onClick={() => setSelectedContest(contest)}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <p className="text-center text-xs text-slate-400 mt-4 md:hidden">
-                  좌우로 스와이프하여 더 보기
-                </p>
-              </>
-            )}
-          </section>
-
-          {/* 3) 마감된 공모전 (최근 7일) */}
-          <section>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
-                마감된 공모전 (최근 7일)
-              </h2>
-            </div>
-
-            {loading ? (
-              <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
-            ) : closedRecent.length === 0 ? (
-              <div className="text-sm text-slate-400 py-6">
-                최근 7일 내 마감된 공모전이 없습니다.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 opacity-90">
-                {closedRecent.slice(0, 6).map((contest) => (
-                  <ContestCard
-                    key={contest.id}
-                    contest={contest}
-                    onClick={() => setSelectedContest(contest)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* 캘린더 프리뷰 */}
+          {/* 4) 캘린더 프리뷰 (기존 리스트 유지) */}
           <section>
             <div className="flex justify-between items-end mb-6">
               <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -314,65 +323,58 @@ const Home: React.FC = () => {
           </section>
         </div>
 
-        {/* RIGHT: 배너 지나서부터 따라오는 sticky 위젯 */}
+        {/* RIGHT: 사이드바 (CSS Sticky 적용됨) */}
         <aside className="hidden md:block">
-        {/* 변경 사항:
-            1. 조건부 렌더링({sidebarActive ? ...}) 제거하고 항상 sticky 적용
-            2. transition-all duration-300: 위치 잡을 때 부드러운 애니메이션 추가
-            3. ease-in-out: 가속도 곡선 추가
-         */}
-        <div className="sticky top-28 space-y-6 transition-all duration-300 ease-in-out">
-          
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
-            <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
-            <p className="text-sm text-slate-300 mb-4">
-              공모전 처음이신가요? <br />
-              팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
-            </p>
-            <button
-              onClick={() => navigate("/guide")}
-              className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
-            >
-              가이드 보러가기
-            </button>
+          {/* JS 스크롤 리스너 없이 CSS sticky만 사용해 부드럽게 동작 */}
+          <div className="sticky top-28 space-y-6 transition-all duration-300 ease-in-out">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
+              <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
+              <p className="text-sm text-slate-300 mb-4">
+                공모전 처음이신가요? <br />
+                팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
+              </p>
+              <button
+                onClick={() => navigate("/guide")}
+                className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
+              >
+                가이드 보러가기
+              </button>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
+              <ul className="text-sm text-slate-600 space-y-2 list-none">
+                <li className="flex items-start gap-2">
+                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <button
+                    onClick={() => navigate("/benefits/icpbl-mileage")}
+                    className="text-left hover:underline hover:text-slate-900"
+                  >
+                    IC-PBL 수강 시 마일리지 적립
+                  </button>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <button
+                    onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
+                    className="text-left hover:underline hover:text-slate-900"
+                  >
+                    비교과 포인트 장학금 신청 기간 확인
+                  </button>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                  <button
+                    onClick={() => navigate("/benefits/startup-club-support")}
+                    className="text-left hover:underline hover:text-slate-900"
+                  >
+                    창업 동아리 지원금 추가 모집
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
-            <ul className="text-sm text-slate-600 space-y-2 list-none">
-              <li className="flex items-start gap-2">
-                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                <button
-                  onClick={() => navigate("/benefits/icpbl-mileage")}
-                  className="text-left hover:underline hover:text-slate-900"
-                >
-                  IC-PBL 수강 시 마일리지 적립
-                </button>
-              </li>
-
-              <li className="flex items-start gap-2">
-                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                <button
-                  onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
-                  className="text-left hover:underline hover:text-slate-900"
-                >
-                  비교과 포인트 장학금 신청 기간 확인
-                </button>
-              </li>
-
-              <li className="flex items-start gap-2">
-                <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                <button
-                  onClick={() => navigate("/benefits/startup-club-support")}
-                  className="text-left hover:underline hover:text-slate-900"
-                >
-                  창업 동아리 지원금 추가 모집
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </aside>
+        </aside>
       </div>
 
       <ContestModal
