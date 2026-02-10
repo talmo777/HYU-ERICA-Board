@@ -68,13 +68,26 @@ const ContestCarouselSection: React.FC<ContestCarouselProps> = ({
 
   return (
     <section>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+      {/* Header Area: items-end로 설정하여 타이틀과 버튼의 하단 라인을 맞춤 */}
+      <div className="flex justify-between items-end mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2 mb-1">
           <span className="w-2 h-8 bg-blue-900 rounded-sm inline-block"></span>
           {title}
         </h2>
 
-        <div className="flex items-center gap-3">
+        {/* 오른쪽 컨트롤 영역: 세로 정렬(flex-col) + 오른쪽 정렬(items-end) */}
+        <div className="flex flex-col items-end gap-1">
+          
+          {/* 전체보기 버튼: 화살표 바로 위에 위치 */}
+          {onViewAll && (
+            <button
+              onClick={onViewAll}
+              className="text-xs text-slate-500 hover:text-blue-900 font-medium flex items-center gap-0.5 transition-colors mb-0.5"
+            >
+              전체보기 <ChevronRight size={14} />
+            </button>
+          )}
+
           {/* 화살표 버튼 그룹 */}
           <div className="flex gap-1">
             <button
@@ -92,18 +105,10 @@ const ContestCarouselSection: React.FC<ContestCarouselProps> = ({
               <ChevronRight size={20} />
             </button>
           </div>
-
-          {onViewAll && (
-            <button
-              onClick={onViewAll}
-              className="text-sm text-slate-500 hover:text-blue-900 font-medium flex items-center ml-2"
-            >
-              전체보기 <ChevronRight size={16} />
-            </button>
-          )}
         </div>
       </div>
 
+      {/* Content Area */}
       {loading ? (
         <div className="text-sm text-slate-400 py-6">불러오는 중…</div>
       ) : contests.length === 0 ? (
@@ -225,38 +230,38 @@ const Home: React.FC = () => {
         {/* LEFT: 메인 컨텐츠 */}
         <div className="space-y-12">
           
-          {/* 1) 진행 중인 공모전 (Carousel 적용) */}
+          {/* 1) 진행 중인 공모전 (View All 버튼 있음) */}
           <ContestCarouselSection
             title="진행 중인 공모전"
             contests={ongoing}
             loading={loading}
             emptyMessage="진행 중인 공모전이 없습니다."
             onContestClick={setSelectedContest}
-            onViewAll={() => navigate("/contests")}
-            desktopCount={3} // 한 줄에 3개
+            onViewAll={() => navigate("/contests")} // 여기가 켜져있어도 화살표 위치는 고정됨
+            desktopCount={3}
           />
 
-          {/* 2) 마감 임박 공모전 (Carousel 적용) */}
+          {/* 2) 마감 임박 공모전 (D-7) */}
           <ContestCarouselSection
             title="마감 임박 공모전 (D-7)"
             contests={urgent}
             loading={loading}
             emptyMessage="마감 임박 공모전이 없습니다."
             onContestClick={setSelectedContest}
-            desktopCount={2} // 강조를 위해 한 줄에 2개 (카드가 커짐)
+            desktopCount={2}
           />
 
-          {/* 3) 마감된 공모전 (Carousel 적용) */}
+          {/* 3) 마감된 공모전 (최근 7일) */}
           <ContestCarouselSection
             title="마감된 공모전 (최근 7일)"
             contests={closedRecent}
             loading={loading}
             emptyMessage="최근 7일 내 마감된 공모전이 없습니다."
             onContestClick={setSelectedContest}
-            desktopCount={3} // 한 줄에 3개
+            desktopCount={3}
           />
 
-          {/* 4) 캘린더 프리뷰 (기존 리스트 유지) */}
+          {/* 4) 캘린더 프리뷰 */}
           <section>
             <div className="flex justify-between items-end mb-6">
               <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -323,9 +328,8 @@ const Home: React.FC = () => {
           </section>
         </div>
 
-        {/* RIGHT: 사이드바 (CSS Sticky 적용됨) */}
+        {/* RIGHT: 사이드바 */}
         <aside className="hidden md:block">
-          {/* JS 스크롤 리스너 없이 CSS sticky만 사용해 부드럽게 동작 */}
           <div className="sticky top-28 space-y-6 transition-all duration-300 ease-in-out">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
               <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
