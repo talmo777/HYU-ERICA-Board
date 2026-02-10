@@ -15,6 +15,103 @@ const Home: React.FC = () => {
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ===== Scroll-follow sidebar (JS clamp) =====
+  const sidebarWrapRef = useRef<HTMLDivElement | null>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const [sidebarStyle, setSidebarStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    const wrap = sidebarWrapRef.current;
+    const sidebar = sidebarRef.current;
+    if (!wrap || !sidebar) return;
+
+    // 헤더 높이 + 여백. 네 레이아웃 기준으로 필요 시 80~140 사이 조절.
+    const HEADER_OFFSET = 110;
+
+    let raf = 0;
+
+    const compute = () => {
+      const scrollY = window.scrollY;
+
+      const wrapRect = wrap.getBoundingClientRect();
+      const wrapTop = scrollY + wrapRect.top;
+      const wrapHeight = wrap.offsetHeight;
+
+      const sidebarHeight = sidebar.offsetHeight;
+
+      // fixed일 때 가로폭/좌표 유지
+      const fixedWidth = wrapRect.width;
+      const fixedLeft = wrapRect.left;
+
+      // wrap 시작 지점부터 따라오되, header 아래에서 멈추게
+      const startY = wrapTop - HEADER_OFFSET;
+
+      // wrap 끝을 넘어서지 않게 clamp
+      const endY = wrapTop + wrapHeight - sidebarHeight - HEADER_OFFSET;
+
+      // wrap이 sidebar보다 짧으면 그냥 static
+      if (wrapHeight <= sidebarHeight) {
+        setSidebarStyle({
+          position: "static",
+          width: "auto",
+          top: "auto",
+          left: "auto",
+        });
+        return;
+      }
+
+      if (scrollY < startY) {
+        // 시작 전: 문서 흐름
+        setSidebarStyle({
+          position: "static",
+          width: "auto",
+          top: "auto",
+          left: "auto",
+        });
+        return;
+      }
+
+      if (scrollY > endY) {
+        // 끝 이후: wrap 내부 bottom에 고정(absolute)
+        setSidebarStyle({
+          position: "absolute",
+          top: wrapHeight - sidebarHeight,
+          width: "100%",
+          left: 0,
+        });
+        return;
+      }
+
+      // 중간: header 아래에서 fixed로 따라오기
+      setSidebarStyle({
+        position: "fixed",
+        top: HEADER_OFFSET,
+        width: fixedWidth,
+        left: fixedLeft,
+      });
+    };
+
+    const onScroll = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(compute);
+    };
+
+    const onResize = () => onScroll();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+
+    // 초기 1회
+    compute();
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  // ===== contests fetch =====
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -311,56 +408,61 @@ const Home: React.FC = () => {
           </section>
         </div>
 
-        {/* RIGHT: sticky 위젯 (페이지 전체 범위에서 따라옴) */}
-        <aside className="hidden md:block md:self-start">
-          <div className="sticky top-32 h-fit space-y-6">
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
-              <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
-              <p className="text-sm text-slate-300 mb-4">
-                공모전 처음이신가요? <br />
-                팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
-              </p>
-              <button
-                onClick={() => navigate("/guide")}
-                className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
-              >
-                가이드 보러가기
-              </button>
-            </div>
+        {/* RIGHT: scroll-follow 위젯 (JS clamp) */}
+        <aside className="hidden md:block">
+          {/* wrap은 relative이어야 absolute 단계가 부모 기준으로 동작 */}
+          <div ref={sidebarWrapRef} className="relative">
+            <div ref={sidebarRef} style={sidebarStyle} className="space-y-6">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 text-white shadow-md">
+                <h3 className="font-bold text-lg mb-2">공모전 팁 & 가이드</h3>
+                <p className="text-sm text-slate-300 mb-4">
+                  공모전 처음이신가요? <br />
+                  팀 빌딩부터 제안서 작성까지 꿀팁을 확인하세요.
+                </p>
+                <button
+                  onClick={() => navigate("/guide")}
+                  className="w-full bg-white/10 hover:bg-white/20 py-2 rounded text-sm transition-colors border border-white/20"
+                >
+                  가이드 보러가기
+                </button>
+              </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
-              <ul className="text-sm text-slate-600 space-y-2 list-none">
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/icpbl-mileage")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    IC-PBL 수강 시 마일리지 적립
-                  </button>
-                </li>
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <h3 className="font-bold text-slate-800 mb-2">놓치기 쉬운 혜택</h3>
+                <ul className="text-sm text-slate-600 space-y-2 list-none">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                    <button
+                      onClick={() => navigate("/benefits/icpbl-mileage")}
+                      className="text-left hover:underline hover:text-slate-900"
+                    >
+                      IC-PBL 수강 시 마일리지 적립
+                    </button>
+                  </li>
 
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/bigo-mileage-scholarship")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    비교과 포인트 장학금 신청 기간 확인
-                  </button>
-                </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                    <button
+                      onClick={() =>
+                        navigate("/benefits/bigo-mileage-scholarship")
+                      }
+                      className="text-left hover:underline hover:text-slate-900"
+                    >
+                      비교과 포인트 장학금 신청 기간 확인
+                    </button>
+                  </li>
 
-                <li className="flex items-start gap-2">
-                  <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                  <button
-                    onClick={() => navigate("/benefits/startup-club-support")}
-                    className="text-left hover:underline hover:text-slate-900"
-                  >
-                    창업 동아리 지원금 추가 모집
-                  </button>
-                </li>
-              </ul>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-[7px] w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                    <button
+                      onClick={() => navigate("/benefits/startup-club-support")}
+                      className="text-left hover:underline hover:text-slate-900"
+                    >
+                      창업 동아리 지원금 추가 모집
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </aside>
